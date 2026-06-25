@@ -32,6 +32,22 @@ You should keep your GitHub Actions up to date, and pinned, but this makes them 
 + uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 ```
 
+### What gets scanned
+
+`gh-act` looks for action references in:
+
+- Every YAML file under `.github/` (recursively) — workflows (including nested
+  ones), composite actions, and other configuration — covering both step
+  `uses:` and job-level reusable workflow `uses:`.
+- Composite action definitions (`action.yml` / `action.yaml`) found anywhere
+  else in the repository, for example at the root or in a monorepo subtree,
+  using their `runs.steps[].uses:` entries. The directories `.git`,
+  `node_modules` and `vendor` are skipped during this repository-wide search.
+
+`gh act ls` lists every reference it finds, including local (`./…`) and Docker
+(`docker://…`) actions. The `pin`, `update` and `outdated` commands skip local
+and Docker references, since they cannot be pinned to a release.
+
 ### Installation
 
 Installation is a single command if you already have the [GitHub CLI](https://cli.github.com) installed:
@@ -66,6 +82,25 @@ gh act pin
 gh act update --pin
 ```
 
+#### Preview changes without writing (dry run)
+
+`update` and `pin` both support `--dry-run`, which prints the changes that would
+be made without modifying any files:
+
+```sh
+gh act pin --dry-run
+gh act update --pin --dry-run
+```
+
+#### Use in CI
+
+`outdated` exits `0` by default. Pass `--exit-code` to make it fail when any
+action is out of date, so it can be used as a CI gate:
+
+```sh
+gh act outdated --exit-code
+```
+
 #### Update actions with branch references
 
 When you have actions using branch references (like `@main`), use the `--pin` flag to convert them to pinned versions:
@@ -89,16 +124,17 @@ NAME:
    act - Update, manage and pin your GitHub Actions
 
 USAGE:
-   act [global options] command [command options]
+   act [global options] [command [command options]]
 
 COMMANDS:
    ls        List used actions
    outdated  Check for outdated actions
-   update    Update actions
+   update    Update actions (supports branch references like @main when using --pin)
    pin       Pin used actions
    help, h   Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --debug     Print debug logs (default: false)
-   --help, -h  show help
+   --debug        Print debug logs
+   --help, -h     show help
+   --version, -v  print the version
 ```
