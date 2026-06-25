@@ -6,65 +6,11 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"runtime/debug"
-	"strings"
 	"syscall"
 
 	"github.com/urfave/cli/v3"
 	"github.com/wayneashleyberry/gh-act/pkg/cmd"
 )
-
-// shortSHALen is how many characters of a commit SHA to display.
-const shortSHALen = 7
-
-// buildVersion derives the version shown by `act --version` from the build
-// info stamped by the Go toolchain. For a precompiled release (a clean build
-// at a git tag) it returns "<tag> (<short-sha>)". Otherwise it falls back to
-// the short commit SHA (with a "-dirty" suffix for uncommitted changes), or
-// "dev" when no build info is available.
-func buildVersion() string {
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return "dev"
-	}
-
-	var revision, dirty string
-
-	for _, setting := range info.Settings {
-		switch setting.Key {
-		case "vcs.revision":
-			revision = setting.Value
-		case "vcs.modified":
-			if setting.Value == "true" {
-				dirty = "-dirty"
-			}
-		}
-	}
-
-	short := revision
-	if len(short) > shortSHALen {
-		short = short[:shortSHALen]
-	}
-
-	// A clean tagged build (the release case) stamps the tag into
-	// Main.Version. Pseudo-versions embed the commit SHA, so exclude those.
-	tag := info.Main.Version
-	isPseudo := short != "" && strings.Contains(tag, short)
-
-	if tag != "" && tag != "(devel)" && !isPseudo {
-		if short == "" {
-			return tag
-		}
-
-		return fmt.Sprintf("%s (%s)", tag, short)
-	}
-
-	if short == "" {
-		return "dev"
-	}
-
-	return short + dirty
-}
 
 func setDefaultLogger(level slog.Leveler) {
 	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
@@ -98,9 +44,8 @@ func run(ctx context.Context) error {
 	}
 
 	command := &cli.Command{
-		Name:    "act",
-		Usage:   "Update, manage and pin your GitHub Actions",
-		Version: buildVersion(),
+		Name:  "act",
+		Usage: "Update, manage and pin your GitHub Actions",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "debug",

@@ -14,8 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          # Fetch full history and tags so the Go toolchain can stamp the
-          # release tag into the binary's build info (act --version).
           fetch-depth: 0
       - uses: cli/gh-extension-precompile@76961aa3bd1123d0a6fd42d0a41aca0696937c39 # v2.2.0
         with:
