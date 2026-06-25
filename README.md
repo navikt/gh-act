@@ -136,5 +136,4 @@ COMMANDS:
 GLOBAL OPTIONS:
    --debug        Print debug logs
    --help, -h     show help
-   --version, -v  print the version
 ```
