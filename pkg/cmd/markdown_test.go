@@ -32,22 +32,22 @@ func TestIsMarkdownFile(t *testing.T) {
 
 func TestExtractYAMLBlocks(t *testing.T) {
 	tests := []struct {
-		name            string
-		markdown        string
-		wantOffsets     []int
-		wantContents    []string
-		wantBlockCount  int
+		name           string
+		markdown       string
+		wantOffsets    []int
+		wantContents   []string
+		wantBlockCount int
 	}{
 		{
-			name: "single yaml block",
-			markdown: "# Title\n\nSome text.\n\n```yaml\njobs:\n  build:\n    steps:\n      - uses: actions/checkout@v4\n```\n",
+			name:           "single yaml block",
+			markdown:       "# Title\n\nSome text.\n\n```yaml\njobs:\n  build:\n    steps:\n      - uses: actions/checkout@v4\n```\n",
 			wantBlockCount: 1,
 			wantOffsets:    []int{6},
 			wantContents:   []string{"jobs:\n  build:\n    steps:\n      - uses: actions/checkout@v4"},
 		},
 		{
-			name: "multiple blocks",
-			markdown: "```yaml\nfirst: block\n```\n\nSome prose.\n\n```yaml\nsecond: block\n```\n",
+			name:           "multiple blocks",
+			markdown:       "```yaml\nfirst: block\n```\n\nSome prose.\n\n```yaml\nsecond: block\n```\n",
 			wantBlockCount: 2,
 			wantOffsets:    []int{2, 8},
 			wantContents:   []string{"first: block", "second: block"},
@@ -68,22 +68,22 @@ func TestExtractYAMLBlocks(t *testing.T) {
 			wantBlockCount: 0,
 		},
 		{
-			name: "case insensitive fence",
-			markdown: "```YAML\njobs: {}\n```\n",
+			name:           "case insensitive fence",
+			markdown:       "```YAML\njobs: {}\n```\n",
 			wantBlockCount: 1,
 			wantOffsets:    []int{2},
 			wantContents:   []string{"jobs: {}"},
 		},
 		{
-			name: "fence with leading whitespace",
-			markdown: "  ```yaml\n  jobs: {}\n  ```\n",
+			name:           "fence with leading whitespace",
+			markdown:       "  ```yaml\n  jobs: {}\n  ```\n",
 			wantBlockCount: 1,
 			wantOffsets:    []int{2},
 			wantContents:   []string{"  jobs: {}"},
 		},
 		{
-			name: "empty yaml block",
-			markdown: "```yaml\n```\n",
+			name:           "empty yaml block",
+			markdown:       "```yaml\n```\n",
 			wantBlockCount: 1,
 			wantOffsets:    []int{2},
 			wantContents:   []string{""},
