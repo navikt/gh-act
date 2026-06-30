@@ -14,13 +14,13 @@ import (
 
 // applyRewrite resolves every action in the repository and rewrites each file
 // according to mode. It is shared by the pin and update commands.
-func applyRewrite(ctx context.Context, mode rewriteMode, dryRun bool) error {
+func applyRewrite(ctx context.Context, mode rewriteMode, dryRun bool, opts CollectOptions) error {
 	client, err := api.NewClient()
 	if err != nil {
 		return fmt.Errorf("create github client: %w", err)
 	}
 
-	files, refs, err := collectActionRefs()
+	files, refs, err := collectActionRefs(opts)
 	if err != nil {
 		return err
 	}

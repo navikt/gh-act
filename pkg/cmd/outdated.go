@@ -10,13 +10,13 @@ import (
 
 // ListOutdatedActions prints every action that has a newer version available
 // and reports whether any were found.
-func ListOutdatedActions(ctx context.Context) (bool, error) {
+func ListOutdatedActions(ctx context.Context, opts CollectOptions) (bool, error) {
 	client, err := api.NewClient()
 	if err != nil {
 		return false, fmt.Errorf("create github client: %w", err)
 	}
 
-	_, refs, err := collectActionRefs()
+	_, refs, err := collectActionRefs(opts)
 	if err != nil {
 		return false, err
 	}

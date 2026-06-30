@@ -101,10 +101,18 @@ func isYAMLFile(name string) bool {
 	return ext == ".yml" || ext == ".yaml"
 }
 
+// CollectOptions controls which sources are scanned for action references.
+type CollectOptions struct {
+	// IncludeMarkdown enables scanning of fenced YAML code blocks inside
+	// markdown files (*.md, *.markdown) in addition to workflow YAML files.
+	IncludeMarkdown bool
+}
+
 // collectActionRefs discovers every workflow/composite file and returns the
 // file list (in scan order) alongside the flat list of action references found
-// across them.
-func collectActionRefs() ([]string, []Action, error) {
+// across them. When opts.IncludeMarkdown is true, markdown files are also
+// scanned for fenced YAML blocks containing action references.
+func collectActionRefs(opts CollectOptions) ([]string, []Action, error) {
 	files, err := findWorkflowFiles()
 	if err != nil {
 		return nil, nil, fmt.Errorf("find workflow files: %w", err)
@@ -114,6 +122,30 @@ func collectActionRefs() ([]string, []Action, error) {
 
 	for _, filePath := range files {
 		found, err := findActionRefsInFile(filePath)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		refs = append(refs, found...)
+	}
+
+	if !opts.IncludeMarkdown {
+		return files, refs, nil
+	}
+
+	mdFiles, err := findMarkdownFiles()
+	if err != nil {
+		return nil, nil, fmt.Errorf("find markdown files: %w", err)
+	}
+
+	// Markdown files (*.md / *.markdown) can never appear in the workflow file
+	// list returned by findWorkflowFiles, which only collects *.yml / *.yaml
+	// and action.yml / action.yaml. There is therefore no risk of overlap and
+	// no deduplication is needed here.
+	files = append(files, mdFiles...)
+
+	for _, filePath := range mdFiles {
+		found, err := findActionRefsInMarkdownFile(filePath)
 		if err != nil {
 			return nil, nil, err
 		}
