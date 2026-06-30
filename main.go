@@ -43,6 +43,15 @@ func run(ctx context.Context) error {
 		Usage: "Print the changes that would be made without writing any files",
 	}
 
+	noMDFlag := &cli.BoolFlag{
+		Name:  "no-md",
+		Usage: "Skip scanning fenced YAML code blocks in markdown files",
+	}
+
+	collectOpts := func(c *cli.Command) cmd.CollectOptions {
+		return cmd.CollectOptions{IncludeMarkdown: !c.Bool("no-md")}
+	}
+
 	command := &cli.Command{
 		Name:  "act",
 		Usage: "Update, manage and pin your GitHub Actions",
@@ -63,8 +72,9 @@ func run(ctx context.Context) error {
 			{
 				Name:  "ls",
 				Usage: "List used actions",
-				Action: func(_ context.Context, _ *cli.Command) error {
-					return cmd.ListActions()
+				Flags: []cli.Flag{noMDFlag},
+				Action: func(_ context.Context, c *cli.Command) error {
+					return cmd.ListActions(collectOpts(c))
 				},
 			},
 			{
@@ -75,9 +85,10 @@ func run(ctx context.Context) error {
 						Name:  "exit-code",
 						Usage: "Exit with a non-zero status when outdated actions are found",
 					},
+					noMDFlag,
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {
-					found, err := cmd.ListOutdatedActions(ctx)
+					found, err := cmd.ListOutdatedActions(ctx, collectOpts(c))
 					if err != nil {
 						return err
 					}
@@ -98,17 +109,18 @@ func run(ctx context.Context) error {
 						Usage: "Pin actions after updating them (required for branch references like @main)",
 					},
 					dryRunFlag,
+					noMDFlag,
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {
-					return cmd.UpdateActions(ctx, c.Bool("pin"), c.Bool("dry-run"))
+					return cmd.UpdateActions(ctx, c.Bool("pin"), c.Bool("dry-run"), collectOpts(c))
 				},
 			},
 			{
 				Name:  "pin",
 				Usage: "Pin used actions",
-				Flags: []cli.Flag{dryRunFlag},
+				Flags: []cli.Flag{dryRunFlag, noMDFlag},
 				Action: func(ctx context.Context, c *cli.Command) error {
-					return cmd.PinActions(ctx, c.Bool("dry-run"))
+					return cmd.PinActions(ctx, c.Bool("dry-run"), collectOpts(c))
 				},
 			},
 		},

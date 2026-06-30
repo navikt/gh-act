@@ -4,8 +4,8 @@ import "fmt"
 
 // ListActions prints every external action reference found in the repository's
 // workflow and composite-action files. It performs no network calls.
-func ListActions() error {
-	actions, err := findActions()
+func ListActions(opts CollectOptions) error {
+	actions, err := findActions(opts)
 	if err != nil {
 		return fmt.Errorf("find actions: %w", err)
 	}
@@ -24,8 +24,8 @@ func ListActions() error {
 
 // findActions discovers and parses every action reference across all workflow
 // and composite-action files.
-func findActions() ([]Action, error) {
-	_, refs, err := collectActionRefs()
+func findActions(opts CollectOptions) ([]Action, error) {
+	_, refs, err := collectActionRefs(opts)
 	if err != nil {
 		return nil, err
 	}

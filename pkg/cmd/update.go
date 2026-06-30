@@ -6,11 +6,11 @@ import "context"
 // each action is additionally pinned to a commit SHA, which is also required to
 // resolve branch references such as @main. When dryRun is true the changes are
 // printed instead of written.
-func UpdateActions(ctx context.Context, pin, dryRun bool) error {
+func UpdateActions(ctx context.Context, pin, dryRun bool, opts CollectOptions) error {
 	mode := modeUpdate
 	if pin {
 		mode = modeUpdatePin
 	}
 
-	return applyRewrite(ctx, mode, dryRun)
+	return applyRewrite(ctx, mode, dryRun, opts)
 }
