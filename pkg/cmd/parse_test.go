@@ -154,6 +154,43 @@ func TestIsPinnableRef(t *testing.T) {
 	}
 }
 
+func TestCollectActionRefsWithMarkdown(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+
+	// A standard workflow YAML file with one action reference.
+	writeFile(t, filepath.Join(".github", "workflows", "ci.yml"), `
+jobs:
+  build:
+    steps:
+      - uses: actions/checkout@v4
+`)
+
+	// A markdown file whose fenced YAML block contains a second reference.
+	writeFile(t, "README.md", "# Example\n\n```yaml\njobs:\n  fmt:\n    uses: gdcorp-actions/setup-oxfmt/.github/workflows/oxfmt-check.yaml@v1.0.0\n```\n")
+
+	// With markdown disabled only the YAML ref should be found.
+	_, refs, err := collectActionRefs(CollectOptions{IncludeMarkdown: false})
+	require.NoError(t, err)
+	require.Len(t, refs, 1)
+	require.Equal(t, "actions/checkout@v4", refs[0].Node.Value)
+
+	// With markdown enabled both refs should be found.
+	files, refs, err := collectActionRefs(CollectOptions{IncludeMarkdown: true})
+	require.NoError(t, err)
+
+	values := make([]string, 0, len(refs))
+	for _, r := range refs {
+		values = append(values, r.Node.Value)
+	}
+
+	require.Contains(t, values, "actions/checkout@v4")
+	require.Contains(t, values, "gdcorp-actions/setup-oxfmt/.github/workflows/oxfmt-check.yaml@v1.0.0")
+
+	// The markdown file must appear in the returned file list.
+	require.Contains(t, files, "README.md")
+}
+
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,21 +48,23 @@ func extractYAMLBlocks(data []byte) []yamlBlock {
 			if lower == "```yaml" {
 				inBlock = true
 				blockLines = nil
-				blockStart = i + 2 // +1 for 0→1-indexed, +1 to skip the fence line itself
+				// i is 0-indexed; +1 converts to 1-indexed, +1 skips past the
+				// fence line itself to land on the first content line.
+				blockStart = i + 2
 			}
 
 			continue
 		}
 
-		if bytes.HasPrefix(trimmed, []byte("```")) {
-			// Closing fence — collect the block.
-			strs := make([]string, len(blockLines))
-			for j, l := range blockLines {
-				strs[j] = string(l)
-			}
-
+		// A closing fence is exactly ``` with no info string. Checking for an
+		// exact match (rather than HasPrefix) prevents a line like ```go inside
+		// a YAML block from accidentally closing it.
+		if bytes.Equal(trimmed, []byte("```")) {
+			// \r has already been stripped from each line above, so joining
+			// with \n gives the YAML parser clean LF-only input regardless of
+			// the original file's line endings.
 			blocks = append(blocks, yamlBlock{
-				content:    []byte(strings.Join(strs, "\n")),
+				content:    bytes.Join(blockLines, []byte("\n")),
 				lineOffset: blockStart,
 			})
 
@@ -125,11 +128,21 @@ func findActionRefsInMarkdownFile(filePath string) ([]Action, error) {
 	for _, block := range blocks {
 		refs, err := parseActionRefs(block.content, filePath)
 		if err != nil {
-			// A malformed YAML block in a README shouldn't abort the whole run.
+			// A malformed YAML block (e.g. an illustrative code sample showing
+			// invalid syntax) should not abort the whole run.
+			slog.Debug("skipping malformed YAML block in markdown file",
+				slog.String("file.path", filePath),
+				slog.String("error.message", err.Error()),
+			)
+
 			continue
 		}
 
 		for i := range refs {
+			// yaml.Unmarshal returns 1-indexed line numbers relative to the
+			// YAML fragment. Adding lineOffset-1 converts them to absolute line
+			// numbers within the markdown file (lineOffset is already the
+			// 1-indexed first content line, so -1 avoids double-counting).
 			refs[i].Node.Line += block.lineOffset - 1
 		}
 

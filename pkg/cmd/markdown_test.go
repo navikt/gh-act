@@ -116,10 +116,18 @@ func TestExtractYAMLBlocksCRLF(t *testing.T) {
 func TestFindActionRefsInMarkdownFile(t *testing.T) {
 	dir := t.TempDir()
 
-	// The uses: line is on markdown file line 7 (fence opens line 5, content
-	// starts line 6, uses: is the second content line → line 7).
+	// Markdown line layout (1-indexed):
+	//  1: # README
+	//  2: (blank)
+	//  3: Some docs.
+	//  4: (blank)
+	//  5: ```yaml          <- fence opens; blockStart = 5+2 = 7... wait, i=4 (0-indexed) → blockStart = 4+2 = 6
+	//  6: jobs:            <- YAML line 1
+	//  7:   build:         <- YAML line 2
+	//  8:     steps:       <- YAML line 3
+	//  9:       - uses:    <- YAML line 4  →  file line = blockStart + YAML line - 1 = 6 + 4 - 1 = 9
+	// 10: ```
 	markdown := "# README\n\nSome docs.\n\n```yaml\njobs:\n  build:\n    steps:\n      - uses: actions/checkout@v4\n```\n"
-	// Line numbers:        1          2              3       4           5       6       7       8       9                                10
 
 	path := filepath.Join(dir, "README.md")
 	require.NoError(t, os.WriteFile(path, []byte(markdown), 0o600))
@@ -128,13 +136,30 @@ func TestFindActionRefsInMarkdownFile(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, actions, 1)
 	require.Equal(t, "actions/checkout@v4", actions[0].Node.Value)
-	// Fence opens on line 5 → content starts line 6. uses: is YAML line 4 → file line 6+4-1 = 9.
 	require.Equal(t, 9, actions[0].Node.Line)
 }
 
 func TestFindActionRefsInMarkdownFileMultipleBlocks(t *testing.T) {
 	dir := t.TempDir()
 
+	// Markdown line layout (1-indexed):
+	//  1: # Title
+	//  2: (blank)
+	//  3: ```yaml        ← i=2 (0-indexed) → blockStart=4
+	//  4: jobs:
+	//  5:   a:
+	//  6:     steps:
+	//  7:       - uses: actions/checkout@v4   ← YAML line 4 → file line 4+4-1 = 7
+	//  8: ```
+	//  9: (blank)
+	// 10: More prose.
+	// 11: (blank)
+	// 12: ```yaml        ← i=11 (0-indexed) → blockStart=13
+	// 13: jobs:
+	// 14:   b:
+	// 15:     steps:
+	// 16:       - uses: actions/setup-go@v5   ← YAML line 4 → file line 13+4-1 = 16
+	// 17: ```
 	markdown := "# Title\n\n```yaml\njobs:\n  a:\n    steps:\n      - uses: actions/checkout@v4\n```\n\nMore prose.\n\n```yaml\njobs:\n  b:\n    steps:\n      - uses: actions/setup-go@v5\n```\n"
 
 	path := filepath.Join(dir, "README.md")
@@ -144,9 +169,11 @@ func TestFindActionRefsInMarkdownFileMultipleBlocks(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, actions, 2)
 
-	values := []string{actions[0].Node.Value, actions[1].Node.Value}
-	require.Contains(t, values, "actions/checkout@v4")
-	require.Contains(t, values, "actions/setup-go@v5")
+	require.Equal(t, "actions/checkout@v4", actions[0].Node.Value)
+	require.Equal(t, 7, actions[0].Node.Line)
+
+	require.Equal(t, "actions/setup-go@v5", actions[1].Node.Value)
+	require.Equal(t, 16, actions[1].Node.Line)
 }
 
 func TestFindActionRefsInMarkdownFileNoBlocks(t *testing.T) {

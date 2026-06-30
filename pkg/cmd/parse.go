@@ -138,17 +138,13 @@ func collectActionRefs(opts CollectOptions) ([]string, []Action, error) {
 		return nil, nil, fmt.Errorf("find markdown files: %w", err)
 	}
 
-	seen := make(map[string]bool, len(files))
-	for _, f := range files {
-		seen[f] = true
-	}
+	// Markdown files (*.md / *.markdown) can never appear in the workflow file
+	// list returned by findWorkflowFiles, which only collects *.yml / *.yaml
+	// and action.yml / action.yaml. There is therefore no risk of overlap and
+	// no deduplication is needed here.
+	files = append(files, mdFiles...)
 
 	for _, filePath := range mdFiles {
-		if !seen[filePath] {
-			seen[filePath] = true
-			files = append(files, filePath)
-		}
-
 		found, err := findActionRefsInMarkdownFile(filePath)
 		if err != nil {
 			return nil, nil, err
