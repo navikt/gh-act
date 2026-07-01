@@ -21,6 +21,8 @@ func TestIsMarkdownFile(t *testing.T) {
 		{name: "action.yaml", want: false},
 		{name: "noextension", want: false},
 		{name: ".md", want: true}, // dotfile with .md extension
+		{name: "file.mdx", want: true},
+		{name: "file.MDX", want: true},
 	}
 
 	for _, tt := range tests {
@@ -209,6 +211,8 @@ func TestFindMarkdownFiles(t *testing.T) {
 	writeFile(t, "CONTRIBUTING.markdown", "# contrib\n")
 	writeFile(t, filepath.Join("docs", "guide.md"), "# guide\n")
 	writeFile(t, filepath.Join(".github", "PULL_REQUEST_TEMPLATE.md"), "# pr\n")
+	writeFile(t, "page.mdx", "# mdx page\n")
+	writeFile(t, filepath.Join("docs", "component.mdx"), "# mdx component\n")
 	// Non-markdown files must be excluded.
 	writeFile(t, "workflow.yml", "jobs: {}\n")
 	writeFile(t, filepath.Join("docs", "notes.txt"), "ignored\n")
@@ -225,5 +229,7 @@ func TestFindMarkdownFiles(t *testing.T) {
 		"CONTRIBUTING.markdown",
 		filepath.Join("docs", "guide.md"),
 		filepath.Join(".github", "PULL_REQUEST_TEMPLATE.md"),
+		"page.mdx",
+		filepath.Join("docs", "component.mdx"),
 	}, files)
 }

@@ -14,7 +14,7 @@ import (
 func isMarkdownFile(name string) bool {
 	ext := strings.ToLower(filepath.Ext(name))
 
-	return ext == ".md" || ext == ".markdown"
+	return ext == ".md" || ext == ".markdown" || ext == ".mdx"
 }
 
 // yamlBlock is a YAML code fence extracted from a markdown file. lineOffset is
