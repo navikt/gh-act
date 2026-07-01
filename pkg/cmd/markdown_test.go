@@ -20,7 +20,7 @@ func TestIsMarkdownFile(t *testing.T) {
 		{name: "workflow.yml", want: false},
 		{name: "action.yaml", want: false},
 		{name: "noextension", want: false},
-		{name: ".md", want: true},   // dotfile with .md extension
+		{name: ".md", want: true}, // dotfile with .md extension
 		{name: "file.mdx", want: true},
 		{name: "file.MDX", want: true},
 	}
